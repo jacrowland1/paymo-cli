@@ -56,8 +56,8 @@ export class PaymoClient {
   private client: AxiosInstance;
   private userId: number | null = null;
 
-  constructor(email: string, password: string) {
-    const token = Buffer.from(`${email}:${password}`).toString('base64');
+  constructor(apiKey: string) {
+    const token = Buffer.from(`${apiKey}:X`).toString('base64');
     this.client = axios.create({
       baseURL: BASE_URL,
       headers: {

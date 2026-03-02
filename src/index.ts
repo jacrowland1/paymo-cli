@@ -12,15 +12,14 @@ const SECONDS_PER_HOUR = 3600;
 const TIMEOUT_MS = 3000; // 3 seconds between API calls to avoid rate limits
 
 function getClient(): PaymoClient {
-  const email = process.env.PAYMO_EMAIL;
-  const password = process.env.PAYMO_PASSWORD;
-  if (!email || !password) {
+  const apiKey = process.env.PAYMO_API_KEY;
+  if (!apiKey) {
     console.error(
-      "Error: PAYMO_EMAIL and PAYMO_PASSWORD must be set in .env file or environment variables.",
+      "Error: PAYMO_API_KEY must be set in .env file or environment variables.",
     );
     process.exit(1);
   }
-  return new PaymoClient(email, password);
+  return new PaymoClient(apiKey);
 }
 
 const program = new Command();

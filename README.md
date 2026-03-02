@@ -9,12 +9,13 @@ cd paymo
 npm install
 ```
 
-Copy `.env.example` to `.env` and fill in your Paymo credentials:
+Copy `.env.example` to `.env` and add your Paymo API key:
 
 ```
-PAYMO_EMAIL=your-email@example.com
-PAYMO_PASSWORD=your-password
+PAYMO_API_KEY=your-api-key
 ```
+
+You can generate an API key from your Paymo account under **My Settings → API Keys**.
 
 ## Commands
 
@@ -125,7 +126,7 @@ npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --dry-ru
 
 ## Authentication
 
-Uses [Paymo Basic Auth](https://github.com/paymo-org/api/blob/master/sections/authentication.md#basic-auth) with email and password from the `.env` file.
+Uses [Paymo API Key authentication](https://github.com/paymo-org/api/blob/master/sections/authentication.md#api-keys). The API key is sent via HTTP Basic Auth (API key as username, `X` as password). Set `PAYMO_API_KEY` in your `.env` file.
 
 ## API Reference
 
