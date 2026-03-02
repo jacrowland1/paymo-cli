@@ -9,7 +9,6 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const HOURS_PER_DAY = 8;
 const SECONDS_PER_HOUR = 3600;
-const TIMEOUT_MS = 3000; // 3 seconds between API calls to avoid rate limits
 
 function getClient(): PaymoClient {
   const apiKey = process.env.PAYMO_API_KEY;
@@ -194,14 +193,12 @@ program
 
       console.log(`  Creating ${daysToCreate.length} entries...\n`);
 
-      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
       let created = 0;
       let failed = 0;
 
       for (let i = 0; i < daysToCreate.length; i++) {
         const day = daysToCreate[i];
-        if (i > 0) await sleep(TIMEOUT_MS);
+        await client.waitIfNeeded();
         try {
           const entry = await client.createEntry({
             task_id: taskId,
@@ -272,8 +269,6 @@ program
         return;
       }
 
-      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
       let deleted = 0;
       let failed = 0;
 
@@ -281,7 +276,7 @@ program
 
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
-        if (i > 0) await sleep(TIMEOUT_MS);
+        await client.waitIfNeeded();
         try {
           await client.deleteEntry(e.id);
           console.log(`    ✓ deleted #${e.id}`);
