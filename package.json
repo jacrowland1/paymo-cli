@@ -1,0 +1,23 @@
+{
+  "name": "paymo-timesheet",
+  "version": "1.0.0",
+  "description": "CLI tool to automate Paymo timesheet entries",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "add-time": "ts-node src/index.ts add-time",
+    "list-projects": "ts-node src/index.ts list-projects",
+    "list-tasks": "ts-node src/index.ts list-tasks"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
+  }
+}
