@@ -1,20 +1,23 @@
-import { Command } from 'commander';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { PaymoClient } from './paymoClient';
-import { getWorkingDays } from './dates';
+import { Command } from "commander";
+import * as dotenv from "dotenv";
+import * as path from "path";
+import { PaymoClient } from "./paymoClient";
+import { getWorkingDays } from "./dates";
 
 // Load .env from the paymo directory
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const HOURS_PER_DAY = 8;
 const SECONDS_PER_HOUR = 3600;
+const TIMEOUT_MS = 3000; // 3 seconds between API calls to avoid rate limits
 
 function getClient(): PaymoClient {
   const email = process.env.PAYMO_EMAIL;
   const password = process.env.PAYMO_PASSWORD;
   if (!email || !password) {
-    console.error('Error: PAYMO_EMAIL and PAYMO_PASSWORD must be set in .env file or environment variables.');
+    console.error(
+      "Error: PAYMO_EMAIL and PAYMO_PASSWORD must be set in .env file or environment variables.",
+    );
     process.exit(1);
   }
   return new PaymoClient(email, password);
@@ -22,80 +25,114 @@ function getClient(): PaymoClient {
 
 const program = new Command();
 
-program.name('paymo').description('CLI tool to automate Paymo timesheet entries').version('1.0.0');
+program
+  .name("paymo")
+  .description("CLI tool to automate Paymo timesheet entries")
+  .version("1.0.0");
 
 // ─── list-projects ────────────────────────────────────────────────
 program
-  .command('list-projects')
-  .description('List all active projects')
-  .option('--all', 'Include archived projects')
+  .command("list-projects")
+  .description("List all active projects")
+  .option("--all", "Include archived projects")
   .action(async (opts) => {
     try {
       const client = getClient();
       const projects = await client.getProjects(!opts.all);
       if (projects.length === 0) {
-        console.log('No projects found.');
+        console.log("No projects found.");
         return;
       }
-      console.log('\n  Projects:\n');
-      console.log('  ' + 'ID'.padEnd(12) + 'Name'.padEnd(40) + 'Code'.padEnd(10) + 'Active');
-      console.log('  ' + '─'.repeat(70));
+      console.log("\n  Projects:\n");
+      console.log(
+        "  " +
+          "ID".padEnd(12) +
+          "Name".padEnd(40) +
+          "Code".padEnd(10) +
+          "Active",
+      );
+      console.log("  " + "─".repeat(70));
       for (const p of projects) {
         console.log(
-          '  ' + String(p.id).padEnd(12) + p.name.padEnd(40) + (p.code || '—').padEnd(10) + (p.active ? 'Yes' : 'No'),
+          "  " +
+            String(p.id).padEnd(12) +
+            p.name.padEnd(40) +
+            (p.code || "—").padEnd(10) +
+            (p.active ? "Yes" : "No"),
         );
       }
       console.log();
     } catch (err: any) {
-      console.error('Failed to list projects:', err.response?.data || err.message);
+      console.error(
+        "Failed to list projects:",
+        err.response?.data || err.message,
+      );
       process.exit(1);
     }
   });
 
 // ─── list-tasks ───────────────────────────────────────────────────
 program
-  .command('list-tasks')
-  .description('List tasks, optionally filtered by project')
-  .option('-p, --project <projectId>', 'Filter tasks by project ID')
+  .command("list-tasks")
+  .description("List tasks, optionally filtered by project")
+  .option("-p, --project <projectId>", "Filter tasks by project ID")
   .action(async (opts) => {
     try {
       const client = getClient();
       const projectId = opts.project ? Number(opts.project) : undefined;
       const tasks = await client.getTasks(projectId);
       if (tasks.length === 0) {
-        console.log('No tasks found.');
+        console.log("No tasks found.");
         return;
       }
-      console.log('\n  Tasks:\n');
-      console.log('  ' + 'ID'.padEnd(12) + 'Project'.padEnd(12) + 'Name'.padEnd(40) + 'Complete');
-      console.log('  ' + '─'.repeat(72));
+      console.log("\n  Tasks:\n");
+      console.log(
+        "  " +
+          "ID".padEnd(12) +
+          "Project".padEnd(12) +
+          "Name".padEnd(40) +
+          "Complete",
+      );
+      console.log("  " + "─".repeat(72));
       for (const t of tasks) {
         console.log(
-          '  ' +
+          "  " +
             String(t.id).padEnd(12) +
             String(t.project_id).padEnd(12) +
             t.name.padEnd(40) +
-            (t.complete ? 'Yes' : 'No'),
+            (t.complete ? "Yes" : "No"),
         );
       }
       console.log();
     } catch (err: any) {
-      console.error('Failed to list tasks:', err.response?.data || err.message);
+      console.error("Failed to list tasks:", err.response?.data || err.message);
       process.exit(1);
     }
   });
 
 // ─── add-time ─────────────────────────────────────────────────────
 program
-  .command('add-time')
-  .description('Bulk add time entries for a date range')
-  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD, inclusive)')
-  .requiredOption('--end <date>', 'End date (YYYY-MM-DD, inclusive)')
-  .requiredOption('--task <taskId>', 'Task ID to log time against')
-  .option('--hours <hours>', 'Hours per day (default: 8)', String(HOURS_PER_DAY))
-  .option('--exclude <dates>', 'Comma-separated dates to exclude (YYYY-MM-DD)', '')
-  .option('--description <text>', 'Description for the time entries', 'Development')
-  .option('--dry-run', 'Preview entries without creating them')
+  .command("add-time")
+  .description("Bulk add time entries for a date range")
+  .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
+  .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+  .requiredOption("--task <taskId>", "Task ID to log time against")
+  .option(
+    "--hours <hours>",
+    "Hours per day (default: 8)",
+    String(HOURS_PER_DAY),
+  )
+  .option(
+    "--exclude <dates>",
+    "Comma-separated dates to exclude (YYYY-MM-DD)",
+    "",
+  )
+  .option(
+    "--description <text>",
+    "Description for the time entries",
+    "Development",
+  )
+  .option("--dry-run", "Preview entries without creating them")
   .action(async (opts) => {
     try {
       const client = getClient();
@@ -103,12 +140,14 @@ program
       const hours = Number(opts.hours);
       const duration = hours * SECONDS_PER_HOUR;
       const description: string = opts.description;
-      const excludeDates = opts.exclude ? opts.exclude.split(',').map((d: string) => d.trim()) : [];
+      const excludeDates = opts.exclude
+        ? opts.exclude.split(",").map((d: string) => d.trim())
+        : [];
 
       const days = getWorkingDays(opts.start, opts.end, excludeDates);
 
       if (days.length === 0) {
-        console.log('No working days in the specified range.');
+        console.log("No working days in the specified range.");
         return;
       }
 
@@ -117,13 +156,13 @@ program
       console.log(`  Hours/day:   ${hours}`);
       console.log(`  Description: ${description}`);
       if (excludeDates.length > 0) {
-        console.log(`  Excluded:    ${excludeDates.join(', ')}`);
+        console.log(`  Excluded:    ${excludeDates.join(", ")}`);
       }
       console.log(`  Working days: ${days.length}`);
       console.log(`  Total hours:  ${days.length * hours}\n`);
 
       if (opts.dryRun) {
-        console.log('  Dry run — entries that would be created:\n');
+        console.log("  Dry run — entries that would be created:\n");
         for (const day of days) {
           console.log(`    ${day}  ${hours}h  "${description}"`);
         }
@@ -131,10 +170,16 @@ program
         return;
       }
 
-      console.log('  Fetching existing entries...\n');
+      console.log("  Fetching existing entries...\n");
 
-      const existingEntries = await client.getEntries(taskId, opts.start, opts.end);
-      const existingDates = new Set(existingEntries.map((e) => e.date).filter(Boolean));
+      const existingEntries = await client.getEntries(
+        taskId,
+        opts.start,
+        opts.end,
+      );
+      const existingDates = new Set(
+        existingEntries.map((e) => e.date).filter(Boolean),
+      );
 
       const daysToCreate = days.filter((d) => !existingDates.has(d));
       const skipped = days.length - daysToCreate.length;
@@ -144,7 +189,7 @@ program
       }
 
       if (daysToCreate.length === 0) {
-        console.log('  All days already have entries — nothing to do.\n');
+        console.log("  All days already have entries — nothing to do.\n");
         return;
       }
 
@@ -157,7 +202,7 @@ program
 
       for (let i = 0; i < daysToCreate.length; i++) {
         const day = daysToCreate[i];
-        if (i > 0) await sleep(3000);
+        if (i > 0) await sleep(TIMEOUT_MS);
         try {
           const entry = await client.createEntry({
             task_id: taskId,
@@ -174,47 +219,57 @@ program
         }
       }
 
-      console.log(`\n  Done: ${created} created, ${skipped} skipped, ${failed} failed.\n`);
+      console.log(
+        `\n  Done: ${created} created, ${skipped} skipped, ${failed} failed.\n`,
+      );
     } catch (err: any) {
-      console.error('Failed to add time:', err.response?.data || err.message);
+      console.error("Failed to add time:", err.response?.data || err.message);
       process.exit(1);
     }
   });
 
 // ─── clear-time ───────────────────────────────────────────────────
 program
-  .command('clear-time')
-  .description('Delete all time entries between two dates')
-  .requiredOption('--start <date>', 'Start date (YYYY-MM-DD, inclusive)')
-  .requiredOption('--end <date>', 'End date (YYYY-MM-DD, inclusive)')
-  .option('--task <taskId>', 'Only delete entries for a specific task ID')
-  .option('--dry-run', 'Preview entries that would be deleted')
+  .command("clear-time")
+  .description("Delete all time entries between two dates")
+  .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
+  .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+  .option("--task <taskId>", "Only delete entries for a specific task ID")
+  .option("--dry-run", "Preview entries that would be deleted")
   .action(async (opts) => {
     try {
       const client = getClient();
       const taskId = opts.task ? Number(opts.task) : undefined;
 
-      console.log(`\n  Fetching entries from ${opts.start} to ${opts.end}...\n`);
+      console.log(
+        `\n  Fetching entries from ${opts.start} to ${opts.end}...\n`,
+      );
 
       const entries = taskId
         ? await client.getEntries(taskId, opts.start, opts.end)
         : await client.getEntriesByDate(opts.start, opts.end);
 
       if (entries.length === 0) {
-        console.log('  No entries found in the specified range.\n');
+        console.log("  No entries found in the specified range.\n");
         return;
       }
 
-      console.log(`  Found ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}:\n`);
+      console.log(
+        `  Found ${entries.length} entr${entries.length === 1 ? "y" : "ies"}:\n`,
+      );
       for (const e of entries) {
-        const date = e.date || e.start_time?.split('T')[0] || 'unknown';
-        const hrs = e.duration ? (e.duration / 3600).toFixed(1) : '?';
-        console.log(`    #${e.id}  ${date}  ${hrs}h  task:${e.task_id}  "${e.description || ''}"`);
+        const date = e.date || e.start_time?.split("T")[0] || "unknown";
+        const hrs = e.duration ? (e.duration / 3600).toFixed(1) : "?";
+        console.log(
+          `    #${e.id}  ${date}  ${hrs}h  task:${e.task_id}  "${e.description || ""}"`,
+        );
       }
       console.log();
 
       if (opts.dryRun) {
-        console.log(`  Dry run — ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} would be deleted.\n`);
+        console.log(
+          `  Dry run — ${entries.length} entr${entries.length === 1 ? "y" : "ies"} would be deleted.\n`,
+        );
         return;
       }
 
@@ -223,11 +278,11 @@ program
       let deleted = 0;
       let failed = 0;
 
-      console.log('  Deleting entries...\n');
+      console.log("  Deleting entries...\n");
 
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
-        if (i > 0) await sleep(3000);
+        if (i > 0) await sleep(TIMEOUT_MS);
         try {
           await client.deleteEntry(e.id);
           console.log(`    ✓ deleted #${e.id}`);
@@ -241,7 +296,7 @@ program
 
       console.log(`\n  Done: ${deleted} deleted, ${failed} failed.\n`);
     } catch (err: any) {
-      console.error('Failed to clear time:', err.response?.data || err.message);
+      console.error("Failed to clear time:", err.response?.data || err.message);
       process.exit(1);
     }
   });

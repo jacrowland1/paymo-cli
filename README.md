@@ -56,15 +56,15 @@ npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 123
 
 #### Flags
 
-| Flag | Required | Default | Description |
-| --- | --- | --- | --- |
-| `--start <date>` | Yes | — | Start date (YYYY-MM-DD, inclusive) |
-| `--end <date>` | Yes | — | End date (YYYY-MM-DD, inclusive) |
-| `--task <taskId>` | Yes | — | Task ID to log time against |
-| `--hours <hours>` | No | `8` | Hours per day |
-| `--exclude <dates>` | No | — | Comma-separated dates to skip (e.g. `2026-03-04,2026-03-05`) |
-| `--description <text>` | No | `Development` | Description for the time entries |
-| `--dry-run` | No | — | Preview entries without creating them |
+| Flag                   | Required | Default       | Description                                                  |
+| ---------------------- | -------- | ------------- | ------------------------------------------------------------ |
+| `--start <date>`       | Yes      | —             | Start date (YYYY-MM-DD, inclusive)                           |
+| `--end <date>`         | Yes      | —             | End date (YYYY-MM-DD, inclusive)                             |
+| `--task <taskId>`      | Yes      | —             | Task ID to log time against                                  |
+| `--hours <hours>`      | No       | `8`           | Hours per day                                                |
+| `--exclude <dates>`    | No       | —             | Comma-separated dates to skip (e.g. `2026-03-04,2026-03-05`) |
+| `--description <text>` | No       | `Development` | Description for the time entries                             |
+| `--dry-run`            | No       | —             | Preview entries without creating them                        |
 
 #### Examples
 
@@ -84,6 +84,43 @@ Preview what would be created without actually creating entries:
 
 ```bash
 npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 12345 --dry-run
+```
+
+### Clear Time
+
+Delete all time entries between two dates.
+
+```bash
+npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06
+```
+
+#### Flags
+
+| Flag              | Required | Default | Description                                |
+| ----------------- | -------- | ------- | ------------------------------------------ |
+| `--start <date>`  | Yes      | —       | Start date (YYYY-MM-DD, inclusive)         |
+| `--end <date>`    | Yes      | —       | End date (YYYY-MM-DD, inclusive)           |
+| `--task <taskId>` | No       | —       | Only delete entries for a specific task ID |
+| `--dry-run`       | No       | —       | Preview entries that would be deleted      |
+
+#### Examples
+
+Delete all entries for a week:
+
+```bash
+npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06
+```
+
+Delete only entries for a specific task:
+
+```bash
+npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --task 12345
+```
+
+Preview what would be deleted:
+
+```bash
+npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --dry-run
 ```
 
 ## Authentication
