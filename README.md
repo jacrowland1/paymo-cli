@@ -64,6 +64,8 @@ npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 123
 | `--task <taskId>`      | Yes      | —             | Task ID to log time against                                  |
 | `--hours <hours>`      | No       | `8`           | Hours per day                                                |
 | `--exclude <dates>`    | No       | —             | Comma-separated dates to skip (e.g. `2026-03-04,2026-03-05`) |
+| `--exclude-start <date>` | No     | —             | Start of a date range to exclude (YYYY-MM-DD, inclusive)     |
+| `--exclude-end <date>`   | No     | —             | End of a date range to exclude (YYYY-MM-DD, inclusive)       |
 | `--description <text>` | No       | `Development` | Description for the time entries                             |
 | `--dry-run`            | No       | —             | Preview entries without creating them                        |
 

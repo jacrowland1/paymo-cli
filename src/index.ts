@@ -2,7 +2,7 @@ import { Command } from "commander";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { PaymoClient } from "./paymoClient";
-import { getWorkingDays } from "./dates";
+import { getWorkingDays, getDateRange } from "./dates";
 
 // Load .env from the paymo directory
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -126,6 +126,14 @@ program
     "",
   )
   .option(
+    "--exclude-start <date>",
+    "Start of date range to exclude (YYYY-MM-DD, inclusive)",
+  )
+  .option(
+    "--exclude-end <date>",
+    "End of date range to exclude (YYYY-MM-DD, inclusive)",
+  )
+  .option(
     "--description <text>",
     "Description for the time entries",
     "Development",
@@ -141,6 +149,15 @@ program
       const excludeDates = opts.exclude
         ? opts.exclude.split(",").map((d: string) => d.trim())
         : [];
+
+      if (opts.excludeStart && opts.excludeEnd) {
+        excludeDates.push(...getDateRange(opts.excludeStart, opts.excludeEnd));
+      } else if (opts.excludeStart || opts.excludeEnd) {
+        console.error(
+          "Error: --exclude-start and --exclude-end must be used together.",
+        );
+        process.exit(1);
+      }
 
       const days = getWorkingDays(opts.start, opts.end, excludeDates);
 
