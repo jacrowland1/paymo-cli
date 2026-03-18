@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import * as path from "path";
-import { PaymoClient } from "./paymoClient";
+import { PaymoClient, PaymoEntry } from "./paymoClient";
 import { getWorkingDays, getDateRange } from "./dates";
 
 // Load .env from the paymo directory
@@ -237,6 +237,75 @@ program
       );
     } catch (err: any) {
       console.error("Failed to add time:", err.response?.data || err.message);
+      process.exit(1);
+    }
+  });
+
+// ─── list-time ────────────────────────────────────────────────────
+program
+  .command("list-time")
+  .description("List time entries for each day in a date range")
+  .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
+  .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+  .option("--task <taskId>", "Only show entries for a specific task ID")
+  .action(async (opts) => {
+    try {
+      const client = getClient();
+      const taskId = opts.task ? Number(opts.task) : undefined;
+
+      console.log(
+        `\n  Fetching entries from ${opts.start} to ${opts.end}...\n`,
+      );
+
+      const entries = taskId
+        ? await client.getEntries(taskId, opts.start, opts.end)
+        : await client.getEntriesByDate(opts.start, opts.end);
+
+      if (entries.length === 0) {
+        console.log("  No entries found in the specified range.\n");
+        return;
+      }
+
+      // Fetch task names for display
+      const taskIds = [...new Set(entries.map((e) => e.task_id))];
+      const tasks = await client.getTasks();
+      const taskMap = new Map(tasks.map((t) => [t.id, t.name]));
+
+      // Group entries by date
+      const byDate = new Map<string, PaymoEntry[]>();
+      for (const e of entries) {
+        const date = e.date || e.start_time?.split("T")[0] || "unknown";
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date)!.push(e);
+      }
+
+      // Sort dates
+      const sortedDates = [...byDate.keys()].sort();
+
+      let totalHours = 0;
+
+      for (const date of sortedDates) {
+        const dayEntries = byDate.get(date)!;
+        const dayHours = dayEntries.reduce(
+          (sum, e) => sum + (e.duration ? e.duration / 3600 : 0),
+          0,
+        );
+        totalHours += dayHours;
+
+        console.log(`  ${date}  (${dayHours.toFixed(1)}h)`);
+        for (const e of dayEntries) {
+          const hrs = e.duration ? (e.duration / 3600).toFixed(1) : "?";
+          const taskName = taskMap.get(e.task_id) || `task:${e.task_id}`;
+          console.log(`    ${hrs}h  ${taskName}  "${e.description || ""}"`);
+        }
+        console.log();
+      }
+
+      console.log(
+        `  Total: ${totalHours.toFixed(1)}h across ${entries.length} entr${entries.length === 1 ? "y" : "ies"} over ${sortedDates.length} day(s).\n`,
+      );
+    } catch (err: any) {
+      console.error("Failed to list time:", err.response?.data || err.message);
       process.exit(1);
     }
   });
