@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "CLI tool to automate Paymo timesheet entries",
   "main": "dist/index.js",
+  "bin": {
+    "paymo": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "ts-node src/index.ts",

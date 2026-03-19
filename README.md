@@ -17,6 +17,17 @@ PAYMO_API_KEY=your-api-key
 
 You can generate an API key from your Paymo account under **My Settings → API Keys**.
 
+### Install as a global command
+
+Build and link the CLI so you can run `paymo` from anywhere:
+
+```bash
+npm run build
+npm link
+```
+
+After this, all commands are available as `paymo <command>`. If you make code changes, run `npm run build` again to update.
+
 ## Commands
 
 ### List Projects
@@ -24,13 +35,13 @@ You can generate an API key from your Paymo account under **My Settings → API 
 List all active projects:
 
 ```bash
-npx ts-node src/index.ts list-projects
+paymo list-projects
 ```
 
 Include archived projects:
 
 ```bash
-npx ts-node src/index.ts list-projects --all
+paymo list-projects --all
 ```
 
 ### List Tasks
@@ -38,13 +49,13 @@ npx ts-node src/index.ts list-projects --all
 List all tasks:
 
 ```bash
-npx ts-node src/index.ts list-tasks
+paymo list-tasks
 ```
 
 Filter by project:
 
 ```bash
-npx ts-node src/index.ts list-tasks -p <projectId>
+paymo list-tasks -p <projectId>
 ```
 
 ### Add Time
@@ -52,7 +63,7 @@ npx ts-node src/index.ts list-tasks -p <projectId>
 Bulk add time entries for a date range. Weekends are excluded automatically.
 
 ```bash
-npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 12345
+paymo add-time --start 2026-03-02 --end 2026-03-06 --task 12345
 ```
 
 #### Flags
@@ -74,19 +85,19 @@ npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 123
 Add 8 hours/day for a full work week:
 
 ```bash
-npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 12345
+paymo add-time --start 2026-03-02 --end 2026-03-06 --task 12345
 ```
 
 Add 6 hours/day, excluding a leave day:
 
 ```bash
-npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 12345 --hours 6 --exclude 2026-03-04
+paymo add-time --start 2026-03-02 --end 2026-03-06 --task 12345 --hours 6 --exclude 2026-03-04
 ```
 
 Preview what would be created without actually creating entries:
 
 ```bash
-npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 12345 --dry-run
+paymo add-time --start 2026-03-02 --end 2026-03-06 --task 12345 --dry-run
 ```
 
 ### List Time
@@ -94,7 +105,7 @@ npx ts-node src/index.ts add-time --start 2026-03-02 --end 2026-03-06 --task 123
 List time entries for each day in a date range, grouped by date.
 
 ```bash
-npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06
+paymo list-time --start 2026-03-02 --end 2026-03-06
 ```
 
 #### Flags
@@ -111,13 +122,13 @@ npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06
 List all entries for a week:
 
 ```bash
-npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06
+paymo list-time --start 2026-03-02 --end 2026-03-06
 ```
 
 List entries for a specific task:
 
 ```bash
-npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06 --task 12345
+paymo list-time --start 2026-03-02 --end 2026-03-06 --task 12345
 ```
 
 ### Clear Time
@@ -125,7 +136,7 @@ npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06 --task 12
 Delete all time entries between two dates.
 
 ```bash
-npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06
+paymo clear-time --start 2026-03-02 --end 2026-03-06
 ```
 
 #### Flags
@@ -142,19 +153,19 @@ npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06
 Delete all entries for a week:
 
 ```bash
-npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06
+paymo clear-time --start 2026-03-02 --end 2026-03-06
 ```
 
 Delete only entries for a specific task:
 
 ```bash
-npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --task 12345
+paymo clear-time --start 2026-03-02 --end 2026-03-06 --task 12345
 ```
 
 Preview what would be deleted:
 
 ```bash
-npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --dry-run
+paymo clear-time --start 2026-03-02 --end 2026-03-06 --dry-run
 ```
 
 ### Config
@@ -166,22 +177,22 @@ Available keys: `task`, `hours`, `description`
 #### Set a default
 
 ```bash
-npx ts-node src/index.ts config set task 12345
-npx ts-node src/index.ts config set hours 8
-npx ts-node src/index.ts config set description "Development"
+paymo config set task 12345
+paymo config set hours 8
+paymo config set description "Development"
 ```
 
 #### View defaults
 
 ```bash
-npx ts-node src/index.ts config get
-npx ts-node src/index.ts config get task
+paymo config get
+paymo config get task
 ```
 
 #### Remove a default
 
 ```bash
-npx ts-node src/index.ts config unset task
+paymo config unset task
 ```
 
 When defaults are set, `add-time` flags become optional. CLI flags always override config values.
