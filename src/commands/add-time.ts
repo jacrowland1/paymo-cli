@@ -1,14 +1,14 @@
 import { Command } from "commander";
 import { getClient, HOURS_PER_DAY, SECONDS_PER_HOUR } from "./_shared";
 import { loadConfig } from "../utils/config";
-import { getWorkingDays, getDateRange } from "../utils/dates";
+import { getWorkingDays, getDateRange, formatDate } from "../utils/dates";
 
 export function registerAddTime(program: Command): void {
   program
     .command("add-time")
     .description("Bulk add time entries for a date range")
     .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
-    .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+    .option("--end <date>", "End date (YYYY-MM-DD, inclusive, default: today)")
     .option("--task <taskId>", "Task ID to log time against")
     .option("--hours <hours>", "Hours per day")
     .option(
@@ -30,6 +30,7 @@ export function registerAddTime(program: Command): void {
       try {
         const config = loadConfig();
         const client = getClient();
+        const end: string = opts.end ?? formatDate(new Date());
         const taskId = Number(opts.task || config.task);
         if (!taskId) {
           console.error(
@@ -56,7 +57,7 @@ export function registerAddTime(program: Command): void {
           process.exit(1);
         }
 
-        const days = getWorkingDays(opts.start, opts.end, excludeDates);
+        const days = getWorkingDays(opts.start, end, excludeDates);
 
         if (days.length === 0) {
           console.log("No working days in the specified range.");
@@ -64,7 +65,7 @@ export function registerAddTime(program: Command): void {
         }
 
         console.log(`\n  Task ID:     ${taskId}`);
-        console.log(`  Date range:  ${opts.start} → ${opts.end}`);
+        console.log(`  Date range:  ${opts.start} → ${end}`);
         console.log(`  Hours/day:   ${hours}`);
         console.log(`  Description: ${description}`);
         if (excludeDates.length > 0) {
@@ -87,7 +88,7 @@ export function registerAddTime(program: Command): void {
         const existingEntries = await client.getEntries(
           taskId,
           opts.start,
-          opts.end,
+          end,
         );
         const existingDates = new Set(
           existingEntries.map((e) => e.date).filter(Boolean),

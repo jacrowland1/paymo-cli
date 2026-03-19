@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { getClient } from "./_shared";
-import { getDateRange } from "../utils/dates";
+import { getDateRange, formatDate } from "../utils/dates";
 import { PaymoEntry } from "../types";
 
 export function registerListTime(program: Command): void {
@@ -8,21 +8,20 @@ export function registerListTime(program: Command): void {
     .command("list-time")
     .description("List time entries for each day in a date range")
     .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
-    .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+    .option("--end <date>", "End date (YYYY-MM-DD, inclusive, default: today)")
     .option("--task <taskId>", "Only show entries for a specific task ID")
     .option("--include-empty", "Show days with no entries")
     .action(async (opts) => {
       try {
         const client = getClient();
         const taskId = opts.task ? Number(opts.task) : undefined;
+        const end: string = opts.end ?? formatDate(new Date());
 
-        console.log(
-          `\n  Fetching entries from ${opts.start} to ${opts.end}...\n`,
-        );
+        console.log(`\n  Fetching entries from ${opts.start} to ${end}...\n`);
 
         const entries = taskId
-          ? await client.getEntries(taskId, opts.start, opts.end)
-          : await client.getEntriesByDate(opts.start, opts.end);
+          ? await client.getEntries(taskId, opts.start, end)
+          : await client.getEntriesByDate(opts.start, end);
 
         if (entries.length === 0) {
           console.log("  No entries found in the specified range.\n");
@@ -42,7 +41,7 @@ export function registerListTime(program: Command): void {
         }
 
         const sortedDates = opts.includeEmpty
-          ? getDateRange(opts.start, opts.end)
+          ? getDateRange(opts.start, end)
           : [...byDate.keys()].sort();
 
         let totalHours = 0;

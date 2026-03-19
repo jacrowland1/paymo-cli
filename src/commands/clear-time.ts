@@ -1,26 +1,26 @@
 import { Command } from "commander";
 import { getClient } from "./_shared";
+import { formatDate } from "../utils/dates";
 
 export function registerClearTime(program: Command): void {
   program
     .command("clear-time")
     .description("Delete all time entries between two dates")
     .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
-    .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
+    .option("--end <date>", "End date (YYYY-MM-DD, inclusive, default: today)")
     .option("--task <taskId>", "Only delete entries for a specific task ID")
     .option("--dry-run", "Preview entries that would be deleted")
     .action(async (opts) => {
       try {
         const client = getClient();
         const taskId = opts.task ? Number(opts.task) : undefined;
+        const end: string = opts.end ?? formatDate(new Date());
 
-        console.log(
-          `\n  Fetching entries from ${opts.start} to ${opts.end}...\n`,
-        );
+        console.log(`\n  Fetching entries from ${opts.start} to ${end}...\n`);
 
         const entries = taskId
-          ? await client.getEntries(taskId, opts.start, opts.end)
-          : await client.getEntriesByDate(opts.start, opts.end);
+          ? await client.getEntries(taskId, opts.start, end)
+          : await client.getEntriesByDate(opts.start, end);
 
         if (entries.length === 0) {
           console.log("  No entries found in the specified range.\n");
