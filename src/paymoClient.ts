@@ -1,24 +1,12 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
+import { RateLimiter } from "./utils/rateLimiter";
 
 const BASE_URL = "https://app.paymoapp.com/api";
 
-/** Minimum remaining requests before we start preemptive throttling */
-const RATE_LIMIT_BUFFER = 2;
 /** Max number of automatic retries on 429 */
 const MAX_RETRIES = 3;
 /** Default wait (ms) when Retry-After header is missing on a 429 */
 const DEFAULT_RETRY_MS = 5_000;
-
-interface RateLimitState {
-  /** Length in seconds of the current decay period */
-  decayPeriod: number | null;
-  /** Total requests allowed per decay period */
-  limit: number | null;
-  /** Remaining requests in the current decay period */
-  remaining: number | null;
-  /** Timestamp (ms) when the current decay period resets */
-  resetsAt: number | null;
-}
 
 export interface PaymoProject {
   id: number;
@@ -73,12 +61,7 @@ export interface CreateEntryPayload {
 export class PaymoClient {
   private client: AxiosInstance;
   private userId: number | null = null;
-  private rateLimit: RateLimitState = {
-    decayPeriod: null,
-    limit: null,
-    remaining: null,
-    resetsAt: null,
-  };
+  public rateLimiter = new RateLimiter();
 
   constructor(apiKey: string) {
     const token = Buffer.from(`${apiKey}:X`).toString("base64");
@@ -94,12 +77,12 @@ export class PaymoClient {
     // ── Response interceptor: track rate-limit headers ──────────
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        this.updateRateLimitState(response);
+        this.rateLimiter.updateFromResponse(response);
         return response;
       },
       async (error: AxiosError) => {
         if (error.response) {
-          this.updateRateLimitState(error.response);
+          this.rateLimiter.updateFromResponse(error.response);
         }
 
         // Handle 429 Too Many Requests with automatic retry
@@ -120,75 +103,13 @@ export class PaymoClient {
               `(attempt ${config.__retryCount}/${MAX_RETRIES})`,
           );
 
-          await PaymoClient.sleep(waitMs);
+          await RateLimiter.sleep(waitMs);
           return this.client.request(config);
         }
 
         return Promise.reject(error);
       },
     );
-  }
-
-  // ── Rate-limit helpers ────────────────────────────────────────
-
-  /** Parse rate-limit headers from a response and update local state */
-  private updateRateLimitState(response: AxiosResponse): void {
-    const headers = response.headers;
-    const decay = Number(headers["x-ratelimit-decay-period"]);
-    const limit = Number(headers["x-ratelimit-limit"]);
-    const remaining = Number(headers["x-ratelimit-remaining"]);
-
-    if (!isNaN(decay) && decay > 0) this.rateLimit.decayPeriod = decay;
-    if (!isNaN(limit) && limit > 0) this.rateLimit.limit = limit;
-    if (!isNaN(remaining) && remaining >= 0) {
-      this.rateLimit.remaining = remaining;
-      // Estimate when the current window resets
-      if (this.rateLimit.decayPeriod) {
-        this.rateLimit.resetsAt =
-          Date.now() + this.rateLimit.decayPeriod * 1_000;
-      }
-    }
-  }
-
-  /**
-   * Wait if we are near the rate limit.
-   *
-   * Call this before every request that is part of a bulk loop.
-   * - If remaining > buffer → proceeds immediately (no delay).
-   * - If remaining <= buffer → sleeps until the decay window resets,
-   *   distributing the remaining budget evenly.
-   */
-  async waitIfNeeded(): Promise<void> {
-    const { remaining, limit, resetsAt, decayPeriod } = this.rateLimit;
-
-    // No data yet — nothing to throttle
-    if (remaining === null || resetsAt === null) return;
-
-    // Reset window has passed — clear stale state
-    if (Date.now() >= resetsAt) {
-      this.rateLimit.remaining = this.rateLimit.limit;
-      this.rateLimit.resetsAt = null;
-      return;
-    }
-
-    // Still have comfortable headroom
-    if (remaining > RATE_LIMIT_BUFFER) return;
-
-    // Close to the limit — spread remaining calls over the time left
-    const msLeft = resetsAt - Date.now();
-    const callsLeft = Math.max(remaining, 1);
-    const delay = Math.ceil(msLeft / callsLeft);
-
-    console.warn(
-      `  ⏳ Approaching rate limit (${remaining}/${limit} remaining, ` +
-        `window resets in ${(msLeft / 1_000).toFixed(1)}s) — pausing ${(delay / 1_000).toFixed(1)}s`,
-    );
-
-    await PaymoClient.sleep(delay);
-  }
-
-  static sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /** Get and cache the authenticated user's ID */

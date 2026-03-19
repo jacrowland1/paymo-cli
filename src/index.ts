@@ -9,14 +9,14 @@ import {
   getPeriodRange,
   VALID_PERIODS,
   type Period,
-} from "./dates";
+} from "./utils/dates";
 import {
   loadConfig,
   setConfigValue,
   deleteConfigValue,
   isValidKey,
   VALID_KEYS,
-} from "./config";
+} from "./utils/config";
 
 // Load .env from the paymo directory
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -236,7 +236,7 @@ program
 
       for (let i = 0; i < daysToCreate.length; i++) {
         const day = daysToCreate[i];
-        await client.waitIfNeeded();
+        await client.rateLimiter.waitIfNeeded();
         try {
           const entry = await client.createEntry({
             task_id: taskId,
@@ -359,7 +359,7 @@ program
       let failed = 0;
 
       for (const day of daysToCreate) {
-        await client.waitIfNeeded();
+        await client.rateLimiter.waitIfNeeded();
         try {
           const entry = await client.createEntry({
             task_id: taskId,
@@ -551,7 +551,7 @@ program
 
       for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
-        await client.waitIfNeeded();
+        await client.rateLimiter.waitIfNeeded();
         try {
           await client.deleteEntry(e.id);
           console.log(`    ✓ deleted #${e.id}`);
