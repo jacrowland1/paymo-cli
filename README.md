@@ -104,6 +104,7 @@ npx ts-node src/index.ts list-time --start 2026-03-02 --end 2026-03-06
 | `--start <date>`  | Yes      | —       | Start date (YYYY-MM-DD, inclusive)       |
 | `--end <date>`    | Yes      | —       | End date (YYYY-MM-DD, inclusive)         |
 | `--task <taskId>` | No       | —       | Only show entries for a specific task ID |
+| `--include-empty` | No       | —       | Show days with no entries                |
 
 #### Examples
 

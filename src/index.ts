@@ -248,6 +248,7 @@ program
   .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
   .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
   .option("--task <taskId>", "Only show entries for a specific task ID")
+  .option("--include-empty", "Show days with no entries")
   .action(async (opts) => {
     try {
       const client = getClient();
@@ -279,30 +280,68 @@ program
         byDate.get(date)!.push(e);
       }
 
-      // Sort dates
-      const sortedDates = [...byDate.keys()].sort();
+      // Build date list — either just dates with entries, or all dates in range
+      const sortedDates = opts.includeEmpty
+        ? getDateRange(opts.start, opts.end)
+        : [...byDate.keys()].sort();
 
       let totalHours = 0;
 
+      console.log("  Time Entries:\n");
+      console.log(
+        "  " +
+          "Date".padEnd(14) +
+          "Hours".padEnd(8) +
+          "Task".padEnd(30) +
+          "Description",
+      );
+      console.log("  " + "─".repeat(72));
+
       for (const date of sortedDates) {
-        const dayEntries = byDate.get(date)!;
+        const dayEntries = byDate.get(date) || [];
         const dayHours = dayEntries.reduce(
           (sum, e) => sum + (e.duration ? e.duration / 3600 : 0),
           0,
         );
         totalHours += dayHours;
 
-        console.log(`  ${date}  (${dayHours.toFixed(1)}h)`);
-        for (const e of dayEntries) {
-          const hrs = e.duration ? (e.duration / 3600).toFixed(1) : "?";
-          const taskName = taskMap.get(e.task_id) || `task:${e.task_id}`;
-          console.log(`    ${hrs}h  ${taskName}  "${e.description || ""}"`);
+        if (dayEntries.length === 0) {
+          console.log("  " + date.padEnd(14) + "—");
+          console.log("  " + "─".repeat(72));
+          continue;
         }
-        console.log();
+
+        for (let i = 0; i < dayEntries.length; i++) {
+          const e = dayEntries[i];
+          const hrs = e.duration ? (e.duration / 3600).toFixed(1) : "?";
+          const taskName = (
+            taskMap.get(e.task_id) || `task:${e.task_id}`
+          ).substring(0, 28);
+          const desc = (e.description || "—").substring(0, 30);
+          // Show date only on the first entry of each day
+          const dateCol = i === 0 ? date : "";
+          console.log(
+            "  " +
+              dateCol.padEnd(14) +
+              `${hrs}h`.padEnd(8) +
+              taskName.padEnd(30) +
+              desc,
+          );
+        }
+        // Day subtotal if multiple entries
+        if (dayEntries.length > 1) {
+          console.log(
+            "  " +
+              "".padEnd(14) +
+              `${dayHours.toFixed(1)}h`.padEnd(8) +
+              "(day total)",
+          );
+        }
+        console.log("  " + "─".repeat(72));
       }
 
       console.log(
-        `  Total: ${totalHours.toFixed(1)}h across ${entries.length} entr${entries.length === 1 ? "y" : "ies"} over ${sortedDates.length} day(s).\n`,
+        `\n  Total: ${totalHours.toFixed(1)}h across ${entries.length} entr${entries.length === 1 ? "y" : "ies"} over ${sortedDates.length} day(s).\n`,
       );
     } catch (err: any) {
       console.error("Failed to list time:", err.response?.data || err.message);
