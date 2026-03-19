@@ -83,20 +83,27 @@ program
         console.log("No tasks found.");
         return;
       }
+      const projects = await client.getProjects(false);
+      const projectMap = new Map(projects.map((p) => [p.id, p.name]));
       console.log("\n  Tasks:\n");
       console.log(
         "  " +
           "ID".padEnd(12) +
-          "Project".padEnd(12) +
+          "Project ID".padEnd(14) +
+          "Project".padEnd(30) +
           "Name".padEnd(40) +
           "Complete",
       );
-      console.log("  " + "─".repeat(72));
+      console.log("  " + "─".repeat(104));
       for (const t of tasks) {
+        const projName = (
+          projectMap.get(t.project_id) || `${t.project_id}`
+        ).substring(0, 28);
         console.log(
           "  " +
             String(t.id).padEnd(12) +
-            String(t.project_id).padEnd(12) +
+            String(t.project_id).padEnd(14) +
+            projName.padEnd(30) +
             t.name.padEnd(40) +
             (t.complete ? "Yes" : "No"),
         );
@@ -267,10 +274,11 @@ program
         return;
       }
 
-      // Fetch task names for display
-      const taskIds = [...new Set(entries.map((e) => e.task_id))];
+      // Fetch task and project names for display
       const tasks = await client.getTasks();
       const taskMap = new Map(tasks.map((t) => [t.id, t.name]));
+      const projects = await client.getProjects(false);
+      const projectMap = new Map(projects.map((p) => [p.id, p.name]));
 
       // Group entries by date
       const byDate = new Map<string, PaymoEntry[]>();
@@ -292,10 +300,11 @@ program
         "  " +
           "Date".padEnd(14) +
           "Hours".padEnd(8) +
-          "Task".padEnd(30) +
+          "Project".padEnd(24) +
+          "Task".padEnd(24) +
           "Description",
       );
-      console.log("  " + "─".repeat(72));
+      console.log("  " + "─".repeat(90));
 
       for (const date of sortedDates) {
         const dayEntries = byDate.get(date) || [];
@@ -307,16 +316,19 @@ program
 
         if (dayEntries.length === 0) {
           console.log("  " + date.padEnd(14) + "—");
-          console.log("  " + "─".repeat(72));
+          console.log("  " + "─".repeat(90));
           continue;
         }
 
         for (let i = 0; i < dayEntries.length; i++) {
           const e = dayEntries[i];
           const hrs = e.duration ? (e.duration / 3600).toFixed(1) : "?";
+          const projName = (
+            projectMap.get(e.project_id) || `project:${e.project_id}`
+          ).substring(0, 22);
           const taskName = (
             taskMap.get(e.task_id) || `task:${e.task_id}`
-          ).substring(0, 28);
+          ).substring(0, 22);
           const desc = (e.description || "—").substring(0, 30);
           // Show date only on the first entry of each day
           const dateCol = i === 0 ? date : "";
@@ -324,7 +336,8 @@ program
             "  " +
               dateCol.padEnd(14) +
               `${hrs}h`.padEnd(8) +
-              taskName.padEnd(30) +
+              projName.padEnd(24) +
+              taskName.padEnd(24) +
               desc,
           );
         }
@@ -337,7 +350,7 @@ program
               "(day total)",
           );
         }
-        console.log("  " + "─".repeat(72));
+        console.log("  " + "─".repeat(90));
       }
 
       console.log(
