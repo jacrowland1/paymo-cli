@@ -2,7 +2,8 @@
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import * as path from "path";
-import { PaymoClient, PaymoEntry } from "./paymoClient";
+import { PaymoClient } from "./paymoClient";
+import { PaymoEntry } from "./types";
 import {
   getWorkingDays,
   getDateRange,

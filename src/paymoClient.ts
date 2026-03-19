@@ -1,5 +1,11 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import { RateLimiter } from "./utils/rateLimiter";
+import {
+  PaymoProject,
+  PaymoTask,
+  CreateEntryPayload,
+  PaymoEntry,
+} from "./types";
 
 const BASE_URL = "https://app.paymoapp.com/api";
 
@@ -7,56 +13,6 @@ const BASE_URL = "https://app.paymoapp.com/api";
 const MAX_RETRIES = 3;
 /** Default wait (ms) when Retry-After header is missing on a 429 */
 const DEFAULT_RETRY_MS = 5_000;
-
-export interface PaymoProject {
-  id: number;
-  name: string;
-  code: string;
-  description: string;
-  client_id: number;
-  active: boolean;
-  billable: boolean;
-  created_on: string;
-  updated_on: string;
-}
-
-export interface PaymoTask {
-  id: number;
-  name: string;
-  code: string;
-  project_id: number;
-  tasklist_id: number;
-  complete: boolean;
-  billable: boolean;
-  description: string;
-  users: number[];
-  created_on: string;
-  updated_on: string;
-}
-
-export interface PaymoEntry {
-  id: number;
-  task_id: number;
-  user_id: number;
-  project_id: number;
-  date?: string;
-  duration?: number;
-  start_time?: string;
-  end_time?: string;
-  description: string;
-  added_manually: boolean;
-  is_bulk: boolean;
-  billed: boolean;
-  created_on: string;
-  updated_on: string;
-}
-
-export interface CreateEntryPayload {
-  task_id: number;
-  date: string;
-  duration: number;
-  description: string;
-}
 
 export class PaymoClient {
   private client: AxiosInstance;
