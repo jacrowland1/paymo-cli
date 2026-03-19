@@ -3,6 +3,13 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import { PaymoClient, PaymoEntry } from "./paymoClient";
 import { getWorkingDays, getDateRange } from "./dates";
+import {
+  loadConfig,
+  setConfigValue,
+  deleteConfigValue,
+  isValidKey,
+  VALID_KEYS,
+} from "./config";
 
 // Load .env from the paymo directory
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -121,12 +128,8 @@ program
   .description("Bulk add time entries for a date range")
   .requiredOption("--start <date>", "Start date (YYYY-MM-DD, inclusive)")
   .requiredOption("--end <date>", "End date (YYYY-MM-DD, inclusive)")
-  .requiredOption("--task <taskId>", "Task ID to log time against")
-  .option(
-    "--hours <hours>",
-    "Hours per day (default: 8)",
-    String(HOURS_PER_DAY),
-  )
+  .option("--task <taskId>", "Task ID to log time against")
+  .option("--hours <hours>", "Hours per day")
   .option(
     "--exclude <dates>",
     "Comma-separated dates to exclude (YYYY-MM-DD)",
@@ -140,19 +143,23 @@ program
     "--exclude-end <date>",
     "End of date range to exclude (YYYY-MM-DD, inclusive)",
   )
-  .option(
-    "--description <text>",
-    "Description for the time entries",
-    "Development",
-  )
+  .option("--description <text>", "Description for the time entries")
   .option("--dry-run", "Preview entries without creating them")
   .action(async (opts) => {
     try {
+      const config = loadConfig();
       const client = getClient();
-      const taskId = Number(opts.task);
-      const hours = Number(opts.hours);
+      const taskId = Number(opts.task || config.task);
+      if (!taskId) {
+        console.error(
+          "Error: --task is required (or set a default with: config set task <id>)",
+        );
+        process.exit(1);
+      }
+      const hours = Number(opts.hours ?? config.hours ?? HOURS_PER_DAY);
       const duration = hours * SECONDS_PER_HOUR;
-      const description: string = opts.description;
+      const description: string =
+        opts.description ?? config.description ?? "Development";
       const excludeDates = opts.exclude
         ? opts.exclude.split(",").map((d: string) => d.trim())
         : [];
@@ -431,6 +438,61 @@ program
       console.error("Failed to clear time:", err.response?.data || err.message);
       process.exit(1);
     }
+  });
+
+// ─── config ───────────────────────────────────────────────────────
+const configCmd = program
+  .command("config")
+  .description("Manage default settings");
+
+configCmd
+  .command("set <key> <value>")
+  .description("Set a default value (task, hours, description)")
+  .action((key: string, value: string) => {
+    if (!isValidKey(key)) {
+      console.error(
+        `Invalid key: ${key}. Valid keys: ${VALID_KEYS.join(", ")}`,
+      );
+      process.exit(1);
+    }
+    setConfigValue(key, value);
+    console.log(`  ✓ ${key} = ${value}`);
+  });
+
+configCmd
+  .command("get [key]")
+  .description("Show current defaults")
+  .action((key?: string) => {
+    const config = loadConfig();
+    if (key) {
+      if (!isValidKey(key)) {
+        console.error(
+          `Invalid key: ${key}. Valid keys: ${VALID_KEYS.join(", ")}`,
+        );
+        process.exit(1);
+      }
+      console.log(`  ${key} = ${config[key] ?? "(not set)"}`);
+    } else {
+      console.log("\n  Config:\n");
+      for (const k of VALID_KEYS) {
+        console.log(`  ${k.padEnd(14)} ${config[k] ?? "—"}`);
+      }
+      console.log();
+    }
+  });
+
+configCmd
+  .command("unset <key>")
+  .description("Remove a default value")
+  .action((key: string) => {
+    if (!isValidKey(key)) {
+      console.error(
+        `Invalid key: ${key}. Valid keys: ${VALID_KEYS.join(", ")}`,
+      );
+      process.exit(1);
+    }
+    deleteConfigValue(key);
+    console.log(`  ✓ ${key} unset`);
   });
 
 program.parse(process.argv);

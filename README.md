@@ -157,6 +157,35 @@ Preview what would be deleted:
 npx ts-node src/index.ts clear-time --start 2026-03-02 --end 2026-03-06 --dry-run
 ```
 
+### Config
+
+Manage default values for `add-time` flags. Defaults are stored in `.paymorc.json`.
+
+Available keys: `task`, `hours`, `description`
+
+#### Set a default
+
+```bash
+npx ts-node src/index.ts config set task 12345
+npx ts-node src/index.ts config set hours 8
+npx ts-node src/index.ts config set description "Development"
+```
+
+#### View defaults
+
+```bash
+npx ts-node src/index.ts config get
+npx ts-node src/index.ts config get task
+```
+
+#### Remove a default
+
+```bash
+npx ts-node src/index.ts config unset task
+```
+
+When defaults are set, `add-time` flags become optional. CLI flags always override config values.
+
 ## Authentication
 
 Uses [Paymo API Key authentication](https://github.com/paymo-org/api/blob/master/sections/authentication.md#api-keys). The API key is sent via HTTP Basic Auth (API key as username, `X` as password). Set `PAYMO_API_KEY` in your `.env` file.
