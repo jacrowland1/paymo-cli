@@ -1,6 +1,6 @@
 {
   "name": "paymo-cli",
-  "version": "1.1.0",
+  "version": "0.0.1",
   "description": "CLI tool to automate Paymo timesheet entries",
   "main": "dist/index.js",
   "bin": {
